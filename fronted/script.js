@@ -217,7 +217,6 @@ function initDashboard() {
         document.getElementById("customerIdDisplay").textContent = data.customer.LoginId;
         document.getElementById("customerName").textContent = data.customer.Name;
         populateAccounts(data.accounts);
-        displayAccountList(data.accounts);
     })
     .catch(err => alert("Dashboard Error: " + err.message));
 }

@@ -32,11 +32,13 @@ CREATE TABLE IF NOT EXISTS Customer (
     CId INT AUTO_INCREMENT PRIMARY KEY,
     LoginId VARCHAR(20) NOT NULL UNIQUE,
     Password VARCHAR(255) NOT NULL,
-    Name VARCHAR(100) NOT NULL,
-    Contact VARCHAR(20) UNIQUE NOT NULL,
+    FirstName VARCHAR(50) NOT NULL,
+    LastName VARCHAR(50),
+    Contact VARCHAR(10) NOT NULL UNIQUE,
     Email VARCHAR(100),
     Address VARCHAR(255),
     DOB DATE NOT NULL,
+    AadharCard VARCHAR(12),
     IsInternetBankingEnabled BOOLEAN DEFAULT FALSE
 );
 
@@ -122,14 +124,14 @@ VALUES
 ('Kolkata Branch', 'Kolkata', 1, '9876543214');
 
 -- 3️⃣ INSERT INTO CUSTOMER (login credentials included)
-INSERT INTO Customer (LoginId, Password, Name, Contact, Email, Address, DOB, IsInternetBankingEnabled) 
+INSERT INTO Customer (LoginId, Password, FirstName, LastName, Contact, Email, Address, DOB, AadharCard, IsInternetBankingEnabled) 
 VALUES 
-('CUST0001', 'pwd1234', 'Rajesh Sharma', '9876543210', 'rajesh@example.com', 'Mumbai', '1985-05-20', TRUE),
-('CUST0002', 'pwd1234', 'Priya Desai', '9876543211', 'priya@example.com', 'Pune', '1990-08-15', TRUE),
-('CUST0003', 'pwd1234', 'Amit Kumar', '9876543212', 'amit@example.com', 'Delhi', '1988-12-10', FALSE),
-('CUST0004', 'pwd1234', 'Neha Patel', '9876543213', 'neha@example.com', 'Bangalore', '1992-03-25', FALSE),
-('CUST0005', 'pwd1234', 'Vikram Singh', '9876543214', 'vikram@example.com', 'Kolkata', '1987-07-12', TRUE),
-('CUST0006', 'pwd1234', 'Sneha Iyer', '9876543215', 'sneha@example.com', 'Chennai', '1993-11-08', TRUE);
+('CUST0001', 'pwd1234', 'Rajesh', 'Sharma', '9876543210', 'rajesh@example.com', 'Mumbai', '1985-05-20', '123456789012', TRUE),
+('CUST0002', 'pwd1234', 'Priya', 'Desai', '9876543211', 'priya@example.com', 'Pune', '1990-08-15', '234567890123', TRUE),
+('CUST0003', 'pwd1234', 'Amit', 'Kumar', '9876543212', 'amit@example.com', 'Delhi', '1988-12-10', '345678901234', FALSE),
+('CUST0004', 'pwd1234', 'Neha', 'Patel', '9876543213', 'neha@example.com', 'Bangalore', '1992-03-25', '456789012345', FALSE),
+('CUST0005', 'pwd1234', 'Vikram', 'Singh', '9876543214', 'vikram@example.com', 'Kolkata', '1987-07-12', '567890123456', TRUE),
+('CUST0006', 'pwd1234', 'Sneha', 'Iyer', '9876543215', 'sneha@example.com', 'Chennai', '1993-11-08', '678901234567', TRUE);
 
 -- 4️⃣ INSERT INTO EMPLOYEE (5 fields: Name, Gender, Contact, Address, EId-PK, linked to Branch)
 INSERT INTO Employee (Name, Gender, Contact, Address, BranchId) 

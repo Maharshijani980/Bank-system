@@ -94,18 +94,22 @@ const createBankAccount = (cid, accountType, balance, internetBankingEnabled, ca
 
 /* 1. REGISTER */
 app.post("/register", (req, res) => {
-    const { name, contact, address, dob, email, password, internetBanking } = req.body;
+    const { firstName, lastName, contact, address, dob, email, password, aadharCard, internetBanking } = req.body;
 
-    if (!name || !contact || !dob) {
-        return res.status(400).json({ error: "Name, Contact, and DOB are required" });
+    if (!firstName || !contact || !dob) {
+        return res.status(400).json({ error: "First Name, Contact, and DOB are required" });
+    }
+
+    if (contact.length !== 10 || isNaN(contact)) {
+        return res.status(400).json({ error: "Phone number must be exactly 10 digits" });
     }
 
     const plainPassword = password || `pwd${Math.floor(1000 + Math.random() * 9000)}`;
     const tempLoginId = `TEMP${Date.now()}`;
 
     db.query(
-        "INSERT INTO Customer (LoginId, Password, Name, Contact, Email, Address, DOB, IsInternetBankingEnabled) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-        [tempLoginId, plainPassword, name, contact, email || "", address || "", dob, internetBanking ? 1 : 0],
+        "INSERT INTO Customer (LoginId, Password, FirstName, LastName, Contact, Email, Address, DOB, AadharCard, IsInternetBankingEnabled) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        [tempLoginId, plainPassword, firstName, lastName || "", contact, email || "", address || "", dob, aadharCard || "", internetBanking ? 1 : 0],
         (err, result) => {
             if (err) {
                 console.error(err);
@@ -160,12 +164,12 @@ app.post("/customer/login", (req, res) => {
             }
 
             res.json({
-                message: "Login successful",
+                message: "Login Success",
                 customer: {
-                    id: customer.CId,
-                    loginId: customer.LoginId,
-                    name: customer.Name,
-                    contact: customer.Contact
+                    CId: customer.CId,
+                    LoginId: customer.LoginId,
+                    Name: customer.Name,
+                    Contact: customer.Contact
                 },
                 accounts
             });
@@ -351,10 +355,14 @@ app.get("/customer/profile/:loginId", (req, res) => {
 
 /* 8. ADMIN - CREATE CUSTOMER WITH ACCOUNT */
 app.post("/admin/createCustomer", (req, res) => {
-    const { name, contact, email, address, dob, password, accountType, initialDeposit, internetBanking } = req.body;
+    const { firstName, lastName, contact, email, address, dob, password, accountType, initialDeposit, aadharCard, internetBanking } = req.body;
 
-    if (!name || !contact || !dob) {
-        return res.status(400).json({ error: "Name, Contact, and DOB are required" });
+    if (!firstName || !contact || !dob) {
+        return res.status(400).json({ error: "First Name, Contact, and DOB are required" });
+    }
+
+    if (contact.length !== 10 || isNaN(contact)) {
+        return res.status(400).json({ error: "Phone number must be exactly 10 digits" });
     }
 
     const plainPassword = password || `pwd${Math.floor(1000 + Math.random() * 9000)}`;
@@ -608,6 +616,145 @@ app.post("/transfer", (req, res) => {
             );
         }
     );
+});
+
+/* 15. GET ALL CUSTOMERS */
+app.get("/customers", (req, res) => {
+    db.query(
+        `SELECT c.*, 
+         (SELECT COUNT(*) FROM BankAccount WHERE CId = c.CId) as accountCount
+         FROM Customer c
+         ORDER BY c.CId DESC`,
+        (err, customers) => {
+            if (err) {
+                console.error(err);
+                return res.status(500).json({ error: "Error fetching customers" });
+            }
+
+            // Get accounts for each customer
+            if (!customers || customers.length === 0) {
+                return res.json([]);
+            }
+
+            let completedCount = 0;
+            customers.forEach((customer, index) => {
+                db.query(
+                    "SELECT * FROM BankAccount WHERE CId = ?",
+                    [customer.CId],
+                    (err, accounts) => {
+                        customers[index].accounts = accounts || [];
+                        completedCount++;
+                        
+                        if (completedCount === customers.length) {
+                            res.json(customers);
+                        }
+                    }
+                );
+            });
+        }
+    );
+});
+
+/* 16. SEARCH CUSTOMERS */
+app.get("/customers/search", (req, res) => {
+    const searchTerm = req.query.q || "";
+    const query = `%${searchTerm}%`;
+
+    db.query(
+        `SELECT c.*, 
+         (SELECT COUNT(*) FROM BankAccount WHERE CId = c.CId) as accountCount
+         FROM Customer c
+         WHERE c.LoginId LIKE ? OR c.Name LIKE ? OR c.Contact LIKE ?
+         ORDER BY c.CId DESC`,
+        [query, query, query],
+        (err, customers) => {
+            if (err) {
+                console.error(err);
+                return res.status(500).json({ error: "Error searching customers" });
+            }
+
+            if (!customers || customers.length === 0) {
+                return res.json([]);
+            }
+
+            let completedCount = 0;
+            customers.forEach((customer, index) => {
+                db.query(
+                    "SELECT * FROM BankAccount WHERE CId = ?",
+                    [customer.CId],
+                    (err, accounts) => {
+                        customers[index].accounts = accounts || [];
+                        completedCount++;
+                        
+                        if (completedCount === customers.length) {
+                            res.json(customers);
+                        }
+                    }
+                );
+            });
+        }
+    );
+});
+
+/* 17. GET SINGLE CUSTOMER DETAILS */
+app.get("/customer/:customerId", (req, res) => {
+    const customerId = req.params.customerId;
+
+    db.query("SELECT * FROM Customer WHERE CId = ?", [customerId], (err, result) => {
+        if (err) {
+            console.error(err);
+            return res.status(500).json({ error: "Error fetching customer" });
+        }
+
+        if (result.length === 0) {
+            return res.status(404).json({ error: "Customer not found" });
+        }
+
+        const customer = result[0];
+        db.query("SELECT * FROM BankAccount WHERE CId = ?", [customerId], (err, accounts) => {
+            if (err) {
+                console.error(err);
+                return res.status(500).json({ error: "Error fetching accounts" });
+            }
+
+            res.json({
+                customer: {
+                    CId: customer.CId,
+                    LoginId: customer.LoginId,
+                    Name: customer.Name,
+                    Contact: customer.Contact,
+                    Email: customer.Email,
+                    Address: customer.Address,
+                    DOB: customer.DOB,
+                    IsInternetBankingEnabled: customer.IsInternetBankingEnabled
+                },
+                accounts: accounts || []
+            });
+        });
+    });
+});
+
+/* 18. DELETE CUSTOMER */
+app.delete("/customer/:customerId", (req, res) => {
+    const customerId = req.params.customerId;
+
+    // First, delete all accounts for this customer
+    db.query("DELETE FROM BankAccount WHERE CId = ?", [customerId], (err) => {
+        if (err) {
+            console.error(err);
+            return res.status(500).json({ error: "Error deleting accounts" });
+        }
+
+        // Then delete the customer
+        db.query("DELETE FROM Customer WHERE CId = ?", [customerId], (err) => {
+            if (err) {
+                console.error(err);
+                return res.status(500).json({ error: "Error deleting customer" });
+            }
+
+            res.json({ message: "Customer deleted successfully" });
+        });
+    });
 });
 
 /* ====== API END ====== */
