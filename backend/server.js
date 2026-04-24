@@ -3,11 +3,44 @@ const mysql = require('mysql2');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const path = require('path');
+const fs = require('fs');
+const multer = require('multer');
 const db = require('./db');
 
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
+
+// Create uploads directory if it doesn't exist
+const uploadsDir = path.join(__dirname, '../fronted/uploads');
+if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, uploadsDir);
+    },
+    filename: (req, file, cb) => {
+        const timestamp = Date.now();
+        const ext = path.extname(file.originalname);
+        cb(null, `doc_${timestamp}${ext}`);
+    }
+});
+
+const upload = multer({
+    storage: storage,
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+    fileFilter: (req, file, cb) => {
+        const allowed = /\.(pdf|jpg|jpeg|png)$/i;
+        if (allowed.test(file.originalname)) {
+            cb(null, true);
+        } else {
+            cb(new Error('Only PDF, JPG, and PNG files are allowed'));
+        }
+    }
+});
 
 // Serve static files from frontend directory
 app.use(express.static(path.join(__dirname, "../fronted")));
@@ -37,6 +70,27 @@ function updateSavingInterestRate(accId, balance, callback) {
 
 // Helper function to generate login ID
 const generateLoginId = (id) => `CUST${String(id).padStart(4, "0")}`;
+
+// Helper to normalize full name / first+last name inputs
+const parseCustomerName = ({ name, firstName, lastName }) => {
+    const safeFirst = (firstName || "").trim();
+    const safeLast = (lastName || "").trim();
+
+    if (safeFirst) {
+        return { firstName: safeFirst, lastName: safeLast };
+    }
+
+    const fullName = (name || "").trim();
+    if (!fullName) {
+        return { firstName: "", lastName: "" };
+    }
+
+    const parts = fullName.split(/\s+/);
+    return {
+        firstName: parts.shift() || "",
+        lastName: parts.join(" ")
+    };
+};
 
 // Get next account number
 const getNextAccountNumber = (callback) => {
@@ -94,9 +148,10 @@ const createBankAccount = (cid, accountType, balance, internetBankingEnabled, ca
 
 /* 1. REGISTER */
 app.post("/register", (req, res) => {
-    const { firstName, lastName, contact, address, dob, email, password, aadharCard, internetBanking } = req.body;
+    const { firstName, lastName, name, contact, address, dob, email, password, aadharCard, internetBanking } = req.body;
+    const parsedName = parseCustomerName({ name, firstName, lastName });
 
-    if (!firstName || !contact || !dob) {
+    if (!parsedName.firstName || !contact || !dob) {
         return res.status(400).json({ error: "First Name, Contact, and DOB are required" });
     }
 
@@ -109,7 +164,7 @@ app.post("/register", (req, res) => {
 
     db.query(
         "INSERT INTO Customer (LoginId, Password, FirstName, LastName, Contact, Email, Address, DOB, AadharCard, IsInternetBankingEnabled) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        [tempLoginId, plainPassword, firstName, lastName || "", contact, email || "", address || "", dob, aadharCard || "", internetBanking ? 1 : 0],
+        [tempLoginId, plainPassword, parsedName.firstName, parsedName.lastName || "", contact, email || "", address || "", dob, aadharCard || "", internetBanking ? 1 : 0],
         (err, result) => {
             if (err) {
                 console.error(err);
@@ -168,7 +223,7 @@ app.post("/customer/login", (req, res) => {
                 customer: {
                     CId: customer.CId,
                     LoginId: customer.LoginId,
-                    Name: customer.Name,
+                    Name: [customer.FirstName, customer.LastName].filter(Boolean).join(" "),
                     Contact: customer.Contact
                 },
                 accounts
@@ -255,9 +310,11 @@ app.get("/accounts/:cid", (req, res) => {
 /* 6. TRANSACTION */
 app.post("/transaction", (req, res) => {
     const { accountNumber, amount, type } = req.body;
-    const parsedAmount = parseFloat(amount);
+    const parsedAmount = Number(amount);
+    
+    console.log("Transaction Debug - Raw amount:", amount, "Parsed:", parsedAmount, "Type:", typeof amount);
 
-    if (!accountNumber || !parsedAmount || !type || parsedAmount <= 0) {
+    if (!accountNumber || !Number.isFinite(parsedAmount) || !type || parsedAmount <= 0) {
         return res.status(400).json({ error: "Invalid transaction details" });
     }
 
@@ -279,48 +336,63 @@ app.post("/transaction", (req, res) => {
             }
 
             const account = result[0];
-            const newBalance = type === "credit" ? account.Balance + parsedAmount : account.Balance - parsedAmount;
+            const currentBalance = Number(account.Balance);
+            const delta = type === "credit" ? parsedAmount : -parsedAmount;
+            const newBalance = currentBalance + delta;
 
             if (type === "debit" && newBalance < 0) {
                 return res.status(400).json({ error: "Insufficient balance" });
             }
 
             db.query(
-                "UPDATE BankAccount SET Balance = ? WHERE AccId = ?",
-                [newBalance, account.AccId],
+                "UPDATE BankAccount SET Balance = Balance + ? WHERE AccId = ?",
+                [delta, account.AccId],
                 (err) => {
                     if (err) {
                         console.error(err);
                         return res.status(500).json({ error: "Error updating balance" });
                     }
 
-                    if (type === "credit" && account.AccountType === 'saving') {
-                        updateSavingInterestRate(account.AccId, newBalance, () => {
-                            db.query(
-                                "INSERT INTO Transactions (AccountId, Amount, Type, TxnDate, TxnTime) VALUES (?, ?, ?, CURDATE(), CURTIME())",
-                                [account.AccId, parsedAmount, type],
-                                (err, insertResult) => {
-                                    if (err) {
-                                        console.error(err);
-                                        return res.status(500).json({ error: "Error recording transaction" });
-                                    }
-                                    res.json({ message: "Transaction Successful", transactionId: insertResult.insertId, newBalance });
-                                }
-                            );
-                        });
-                    } else {
-                        db.query(
-                            "INSERT INTO Transactions (AccountId, Amount, Type, TxnDate, TxnTime) VALUES (?, ?, ?, CURDATE(), CURTIME())",
-                            [account.AccId, parsedAmount, type],
-                            (err, insertResult) => {
-                                if (err) {
-                                    console.error(err);
-                                    return res.status(500).json({ error: "Error recording transaction" });
-                                }
-                                res.json({ message: "Transaction Successful", transactionId: insertResult.insertId, newBalance });
+                    db.query(
+                        "SELECT Balance FROM BankAccount WHERE AccId = ?",
+                        [account.AccId],
+                        (err, balanceResult) => {
+                            if (err || !balanceResult || balanceResult.length === 0) {
+                                console.error(err);
+                                return res.status(500).json({ error: "Error fetching updated balance" });
                             }
-                        );
-                    }
+
+                            const updatedBalance = Number(balanceResult[0].Balance);
+
+                            if (type === "credit" && account.AccountType === 'saving') {
+                                updateSavingInterestRate(account.AccId, updatedBalance, () => {
+                                    db.query(
+                                        "INSERT INTO Transactions (AccountId, Amount, Type, TxnDate, TxnTime) VALUES (?, ?, ?, CURDATE(), CURTIME())",
+                                        [account.AccId, parsedAmount, type],
+                                        (err, insertResult) => {
+                                            if (err) {
+                                                console.error(err);
+                                                return res.status(500).json({ error: "Error recording transaction" });
+                                            }
+                                            res.json({ message: "Transaction Successful", transactionId: insertResult.insertId, newBalance: updatedBalance });
+                                        }
+                                    );
+                                });
+                            } else {
+                                db.query(
+                                    "INSERT INTO Transactions (AccountId, Amount, Type, TxnDate, TxnTime) VALUES (?, ?, ?, CURDATE(), CURTIME())",
+                                    [account.AccId, parsedAmount, type],
+                                    (err, insertResult) => {
+                                        if (err) {
+                                            console.error(err);
+                                            return res.status(500).json({ error: "Error recording transaction" });
+                                        }
+                                        res.json({ message: "Transaction Successful", transactionId: insertResult.insertId, newBalance: updatedBalance });
+                                    }
+                                );
+                            }
+                        }
+                    );
                 }
             );
         }
@@ -342,26 +414,37 @@ app.get("/customer/profile/:loginId", (req, res) => {
         }
 
         const customer = result[0];
+        const customerWithName = {
+            ...customer,
+            Name: [customer.FirstName, customer.LastName].filter(Boolean).join(" ")
+        };
         db.query("SELECT * FROM BankAccount WHERE CId = ?", [customer.CId], (err, accounts) => {
             if (err) {
                 console.error(err);
                 return res.status(500).json({ error: "Error fetching accounts" });
             }
 
-            res.json({ customer, accounts });
+            res.json({ customer: customerWithName, accounts });
         });
     });
 });
 
 /* 8. ADMIN - CREATE CUSTOMER WITH ACCOUNT */
-app.post("/admin/createCustomer", (req, res) => {
+app.post("/admin/createCustomer", upload.single('document'), (req, res) => {
     const { firstName, lastName, contact, email, address, dob, password, accountType, initialDeposit, aadharCard, internetBanking } = req.body;
+    const documentPath = req.file ? req.file.filename : null;
 
     if (!firstName || !contact || !dob) {
+        if (req.file) {
+            fs.unlinkSync(path.join(uploadsDir, req.file.filename));
+        }
         return res.status(400).json({ error: "First Name, Contact, and DOB are required" });
     }
 
     if (contact.length !== 10 || isNaN(contact)) {
+        if (req.file) {
+            fs.unlinkSync(path.join(uploadsDir, req.file.filename));
+        }
         return res.status(400).json({ error: "Phone number must be exactly 10 digits" });
     }
 
@@ -369,11 +452,14 @@ app.post("/admin/createCustomer", (req, res) => {
     const tempLoginId = `TEMP${Date.now()}`;
 
     db.query(
-        "INSERT INTO Customer (LoginId, Password, Name, Contact, Email, Address, DOB, IsInternetBankingEnabled) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-        [tempLoginId, plainPassword, name, contact, email || "", address || "", dob, internetBanking ? 1 : 0],
+        "INSERT INTO Customer (LoginId, Password, FirstName, LastName, Contact, Email, Address, DOB, AadharCard, IsInternetBankingEnabled, DocumentPath) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        [tempLoginId, plainPassword, firstName, lastName || "", contact, email || "", address || "", dob, aadharCard || "", internetBanking ? 1 : 0, documentPath || ""],
         (err, result) => {
             if (err) {
                 console.error(err);
+                if (req.file) {
+                    fs.unlinkSync(path.join(uploadsDir, req.file.filename));
+                }
                 return res.status(500).json({ error: "Error creating customer" });
             }
 
@@ -386,6 +472,9 @@ app.post("/admin/createCustomer", (req, res) => {
                 (err) => {
                     if (err) {
                         console.error(err);
+                        if (req.file) {
+                            fs.unlinkSync(path.join(uploadsDir, req.file.filename));
+                        }
                         return res.status(500).json({ error: "Error saving login ID" });
                     }
 
@@ -393,6 +482,9 @@ app.post("/admin/createCustomer", (req, res) => {
                         createBankAccount(customerId, accountType, initialDeposit || 0, internetBanking, (err, accountData) => {
                             if (err) {
                                 console.error(err);
+                                if (req.file) {
+                                    fs.unlinkSync(path.join(uploadsDir, req.file.filename));
+                                }
                                 return res.status(500).json({ error: "Error creating account" });
                             }
                             res.json({
@@ -528,9 +620,9 @@ app.get("/transactions-all", (req, res) => {
 /* 14. TRANSFER BETWEEN ACCOUNTS */
 app.post("/transfer", (req, res) => {
     const { fromAccount, toAccount, amount } = req.body;
-    const parsedAmount = parseFloat(amount);
+    const parsedAmount = Number(amount);
 
-    if (!fromAccount || !toAccount || !parsedAmount || parsedAmount <= 0) {
+    if (!fromAccount || !toAccount || !Number.isFinite(parsedAmount) || parsedAmount <= 0) {
         return res.status(400).json({ error: "Invalid transfer details" });
     }
 
@@ -556,25 +648,25 @@ app.post("/transfer", (req, res) => {
 
                     const fromData = fromResult[0];
                     const toData = toResult[0];
-                    const newFromBalance = fromData.Balance - parsedAmount;
+                    const fromBalance = Number(fromData.Balance);
+                    const newFromBalance = fromBalance - parsedAmount;
 
                     if (newFromBalance < 0) {
                         return res.status(400).json({ error: "Insufficient balance" });
                     }
 
                     db.query(
-                        "UPDATE BankAccount SET Balance = ? WHERE AccId = ?",
-                        [newFromBalance, fromData.AccId],
+                        "UPDATE BankAccount SET Balance = Balance - ? WHERE AccId = ?",
+                        [parsedAmount, fromData.AccId],
                         (err) => {
                             if (err) {
                                 console.error(err);
                                 return res.status(500).json({ error: "Error updating from account" });
                             }
 
-                            const newToBalance = toData.Balance + parsedAmount;
                             db.query(
-                                "UPDATE BankAccount SET Balance = ? WHERE AccId = ?",
-                                [newToBalance, toData.AccId],
+                                "UPDATE BankAccount SET Balance = Balance + ? WHERE AccId = ?",
+                                [parsedAmount, toData.AccId],
                                 (err) => {
                                     if (err) {
                                         console.error(err);
@@ -598,12 +690,25 @@ app.post("/transfer", (req, res) => {
                                                         console.error(err);
                                                         return res.status(500).json({ error: "Error recording transfer" });
                                                     }
+                                                    db.query(
+                                                        "SELECT AccId, Balance FROM BankAccount WHERE AccId IN (?, ?)",
+                                                        [fromData.AccId, toData.AccId],
+                                                        (err, balances) => {
+                                                            if (err) {
+                                                                console.error(err);
+                                                                return res.status(500).json({ error: "Error fetching updated balances" });
+                                                            }
 
-                                                    res.json({
-                                                        message: "Transfer Successful",
-                                                        fromBalance: newFromBalance,
-                                                        toBalance: newToBalance
-                                                    });
+                                                            const fromUpdated = balances.find(b => b.AccId === fromData.AccId);
+                                                            const toUpdated = balances.find(b => b.AccId === toData.AccId);
+
+                                                            res.json({
+                                                                message: "Transfer Successful",
+                                                                fromBalance: fromUpdated ? Number(fromUpdated.Balance) : newFromBalance,
+                                                                toBalance: toUpdated ? Number(toUpdated.Balance) : undefined
+                                                            });
+                                                        }
+                                                    );
                                                 }
                                             );
                                         }
@@ -622,6 +727,7 @@ app.post("/transfer", (req, res) => {
 app.get("/customers", (req, res) => {
     db.query(
         `SELECT c.*, 
+         CONCAT(c.FirstName, IF(c.LastName IS NULL OR c.LastName = '', '', CONCAT(' ', c.LastName))) as Name,
          (SELECT COUNT(*) FROM BankAccount WHERE CId = c.CId) as accountCount
          FROM Customer c
          ORDER BY c.CId DESC`,
@@ -662,9 +768,12 @@ app.get("/customers/search", (req, res) => {
 
     db.query(
         `SELECT c.*, 
+         CONCAT(c.FirstName, IF(c.LastName IS NULL OR c.LastName = '', '', CONCAT(' ', c.LastName))) as Name,
          (SELECT COUNT(*) FROM BankAccount WHERE CId = c.CId) as accountCount
          FROM Customer c
-         WHERE c.LoginId LIKE ? OR c.Name LIKE ? OR c.Contact LIKE ?
+         WHERE c.LoginId LIKE ? 
+         OR CONCAT(c.FirstName, IF(c.LastName IS NULL OR c.LastName = '', '', CONCAT(' ', c.LastName))) LIKE ?
+         OR c.Contact LIKE ?
          ORDER BY c.CId DESC`,
         [query, query, query],
         (err, customers) => {
@@ -721,7 +830,7 @@ app.get("/customer/:customerId", (req, res) => {
                 customer: {
                     CId: customer.CId,
                     LoginId: customer.LoginId,
-                    Name: customer.Name,
+                    Name: [customer.FirstName, customer.LastName].filter(Boolean).join(" "),
                     Contact: customer.Contact,
                     Email: customer.Email,
                     Address: customer.Address,

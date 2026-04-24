@@ -27,7 +27,10 @@
             <input id="adminEmail" placeholder="Email Address" type="email">
             <input id="adminAddress" placeholder="Address">
             <input id="adminDob" type="date" placeholder="Date of Birth">
-            <input id="adminCustomerPassword" placeholder="Password (optional)" type="password">
+            <input id="adminAadharCard" placeholder="Aadhar Card Number">
+            <label for="adminDocument" style="display: block; margin: 15px 0; color: #1a1a2e; font-weight: 600;">📄 Upload Document (Proof)</label>
+            <input id="adminDocument" type="file" accept=".pdf,.jpg,.jpeg,.png" placeholder="Upload Document" style="padding: 12px; border: 2px dashed #667eea; border-radius: 8px; cursor: pointer;">
+            <p class="help-text" style="margin-top: 10px;">✓ Accepted: PDF, JPG, PNG (Max 5MB)</p>
             <select id="adminAccountType">
                 <option value="">-- Create first account type --</option>
                 <option value="saving">Saving</option>

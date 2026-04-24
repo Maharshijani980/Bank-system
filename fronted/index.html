@@ -4,33 +4,231 @@
     <meta charset="UTF-8" />
     <title>National Bank System</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        .login-container {
+            max-width: 450px;
+            margin: 0 auto;
+        }
+        
+        .login-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+        
+        .login-card h2 {
+            text-align: center;
+            color: #1a1a2e;
+            margin-bottom: 10px;
+            font-size: 2em;
+            font-weight: 700;
+        }
+        
+        .login-card p {
+            text-align: center;
+            color: #667eea;
+            margin-bottom: 30px;
+            font-size: 0.95em;
+            font-weight: 500;
+        }
+        
+        .login-type-selector {
+            margin-bottom: 30px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .login-type-selector select {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #667eea;
+            border-radius: 12px;
+            font-size: 1em;
+            background: white;
+            color: #1a1a2e;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .login-type-selector select:hover {
+            border-color: #764ba2;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+        
+        .login-type-selector select:focus {
+            outline: none;
+            border-color: #764ba2;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+        
+        .login-card input {
+            width: 100%;
+            padding: 15px;
+            margin-bottom: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            font-size: 1em;
+            transition: all 0.3s ease;
+            background: #f8f9fa;
+            color: #1a1a2e;
+        }
+        
+        .login-card input:focus {
+            outline: none;
+            border-color: #667eea;
+            background: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);
+        }
+        
+        .login-card input::placeholder {
+            color: #999;
+        }
+        
+        .login-card button {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+        
+        .login-card button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+        }
+        
+        .login-card button:active {
+            transform: translateY(0);
+        }
+        
+        .help-text {
+            text-align: center;
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 15px;
+            line-height: 1.5;
+        }
+        
+        .help-text strong {
+            color: #667eea;
+            font-weight: 600;
+        }
+        
+        .admin-section {
+            display: none;
+        }
+        
+        .admin-section.show {
+            display: block;
+        }
+    </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="header">
-        <h1>🏦 National Bank</h1>
-        <p>Employee onboarding and customer login system</p>
-    </div>
+<div class="header">
+    <h1>🏦 National Bank</h1>
+    <p>Unified Login Portal - Admin & Customer</p>
+</div>
 
-    <div class="card">
-        <h2>🛠️ Admin Portal</h2>
-        <input id="adminUser" placeholder="Admin Username">
-        <input id="adminPassword" placeholder="Admin Password" type="password">
-        <button onclick="adminLogin()">Go to Admin Portal</button>
-        <p class="help-text">Admin credentials required to access the admin page.</p>
-    </div>
-
-    <div class="card">
-        <h2>🔐 Customer Login</h2>
-        <input id="loginId" placeholder="Login ID (e.g. CUST0001)">
-        <input id="loginPassword" placeholder="Password" type="password">
-        <button onclick="login()">Login</button>
-        <p class="help-text">Customer should use their unique Login ID and password issued by admin.</p>
+<div class="login-container">
+    <div class="login-card">
+        <h2 id="loginTitle">🔐 Customer Login</h2>
+        <p id="loginSubtitle">Access your banking services</p>
+        
+        <div class="login-type-selector">
+            <select id="loginType" onchange="switchLoginType()">
+                <option value="customer">👤 Customer Login</option>
+                <option value="admin">🛡️ Admin Portal</option>
+            </select>
+        </div>
+        
+        <div id="customerSection">
+            <input id="loginId" placeholder="Login ID (e.g. CUST0001)" type="text">
+            <input id="loginPassword" placeholder="Password" type="password">
+            <button onclick="customerLogin()">🔓 Login</button>
+            <p class="help-text">Use your unique <strong>Login ID</strong> and <strong>password</strong> issued by admin.</p>
+        </div>
+        
+        <div id="adminSection" class="admin-section">
+            <input id="adminUser" placeholder="Admin Username" type="text">
+            <input id="adminPassword" placeholder="Admin Password" type="password">
+            <button onclick="adminLogin()">🔓 Login to Admin</button>
+            <p class="help-text">Admin credentials required to access the <strong>Admin Portal</strong>.</p>
+        </div>
     </div>
 </div>
 
 <script src="script.js"></script>
+<script>
+function switchLoginType() {
+    const loginType = document.getElementById("loginType").value;
+    const customerSection = document.getElementById("customerSection");
+    const adminSection = document.getElementById("adminSection");
+    const loginTitle = document.getElementById("loginTitle");
+    const loginSubtitle = document.getElementById("loginSubtitle");
+    
+    if (loginType === "admin") {
+        customerSection.style.display = "none";
+        adminSection.classList.add("show");
+        loginTitle.textContent = "🛡️ Admin Portal";
+        loginSubtitle.textContent = "Secure admin access";
+    } else {
+        customerSection.style.display = "block";
+        adminSection.classList.remove("show");
+        loginTitle.textContent = "🔐 Customer Login";
+        loginSubtitle.textContent = "Access your banking services";
+    }
+}
+
+function customerLogin() {
+    const loginId = document.getElementById("loginId").value.trim();
+    const password = document.getElementById("loginPassword").value.trim();
+
+    if (!loginId || !password) {
+        alert("Please enter both Login ID and password.");
+        return;
+    }
+
+    fetchAPI("/customer/login", {
+        method: "POST",
+        body: JSON.stringify({ loginId, password })
+    })
+    .then(data => {
+        if (data.error) {
+            alert(data.error);
+        } else if (data.message === "Login Success") {
+            localStorage.setItem("customerLoginId", data.customer.LoginId);
+            window.location.href = "dashboard.html";
+        } else {
+            alert("Unexpected response");
+        }
+    })
+    .catch(err => alert("Login Error: " + err.message));
+}
+
+function adminLogin() {
+    const username = document.getElementById("adminUser").value.trim();
+    const password = document.getElementById("adminPassword").value.trim();
+
+    if (username === "Rushikesh" && password === "Rj12345@") {
+        window.location.href = "admin.html";
+    } else {
+        alert("Invalid admin credentials. Please check username and password.");
+    }
+}
+</script>
 </body>
 </html>
 

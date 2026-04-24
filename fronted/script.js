@@ -70,9 +70,12 @@ function register() {
         return;
     }
 
+    const [firstName = "", ...rest] = name.split(/\s+/);
+    const lastName = rest.join(" ");
+
     fetchAPI("/register", {
         method: "POST",
-        body: JSON.stringify({ name, contact, email, address, dob, password, internetBanking })
+        body: JSON.stringify({ firstName, lastName, contact, email, address, dob, password, internetBanking })
     })
     .then(data => {
         if (data.error) {
@@ -97,29 +100,57 @@ function createCustomerAdmin() {
     const email = document.getElementById("adminEmail").value.trim();
     const address = document.getElementById("adminAddress").value.trim();
     const dob = document.getElementById("adminDob").value;
-    const password = document.getElementById("adminCustomerPassword").value.trim();
+    const aadharCard = document.getElementById("adminAadharCard").value.trim();
+    const documentFile = document.getElementById("adminDocument").files[0];
     const accountType = document.getElementById("adminAccountType").value;
     const initialDeposit = document.getElementById("adminInitialDeposit").value;
     const internetBanking = document.getElementById("adminInternetBanking").checked;
 
     if (!name || !contact || !dob) {
-        alert("Please fill in all required fields.");
+        alert("Please fill in all required fields (Name, Contact, DOB).");
         return;
     }
 
-    fetchAPI("/admin/createCustomer", {
+    if (documentFile) {
+        const maxSize = 5 * 1024 * 1024; // 5MB
+        if (documentFile.size > maxSize) {
+            alert("Document file is too large. Maximum size is 5MB.");
+            return;
+        }
+    }
+
+    // Generate random password
+    const password = `Bank${Math.random().toString(36).substring(2, 10).toUpperCase()}${Math.floor(Math.random() * 1000)}`;
+
+    const [firstName = "", ...rest] = name.split(/\s+/);
+    const lastName = rest.join(" ");
+
+    const formData = new FormData();
+    formData.append("firstName", firstName);
+    formData.append("lastName", lastName);
+    formData.append("contact", contact);
+    formData.append("email", email);
+    formData.append("address", address);
+    formData.append("dob", dob);
+    formData.append("aadharCard", aadharCard);
+    formData.append("password", password);
+    formData.append("accountType", accountType);
+    formData.append("initialDeposit", initialDeposit || 0);
+    formData.append("internetBanking", internetBanking);
+    if (documentFile) {
+        formData.append("document", documentFile);
+    }
+
+    // Use native fetch for FormData with file upload
+    fetch("http://localhost:3000/admin/createCustomer", {
         method: "POST",
-        body: JSON.stringify({
-            name,
-            contact,
-            email,
-            address,
-            dob,
-            password,
-            accountType,
-            initialDeposit: initialDeposit || 0,
-            internetBanking
-        })
+        body: formData
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        return response.json();
     })
     .then(data => {
         if (data.error) {
@@ -131,7 +162,8 @@ function createCustomerAdmin() {
             document.getElementById("adminEmail").value = "";
             document.getElementById("adminAddress").value = "";
             document.getElementById("adminDob").value = "";
-            document.getElementById("adminCustomerPassword").value = "";
+            document.getElementById("adminAadharCard").value = "";
+            document.getElementById("adminDocument").value = "";
             document.getElementById("adminAccountType").value = "";
             document.getElementById("adminInitialDeposit").value = "";
             document.getElementById("adminInternetBanking").checked = false;
@@ -274,6 +306,18 @@ function previewAllTransactions() {
     .then(data => {
         displayTransactions(data);
     })
+    .catch(err => alert("Error loading transactions: " + err.message));
+}
+
+function loadTransactions() {
+    const select = document.getElementById("txnAccSelect");
+    if (!select || !select.value) {
+        alert("Please select an account first.");
+        return;
+    }
+
+    fetchAPI(`/transactions/${select.value}`)
+    .then(data => displayTransactions(data))
     .catch(err => alert("Error loading transactions: " + err.message));
 }
 

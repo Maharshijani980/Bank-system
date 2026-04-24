@@ -39,7 +39,8 @@ CREATE TABLE IF NOT EXISTS Customer (
     Address VARCHAR(255),
     DOB DATE NOT NULL,
     AadharCard VARCHAR(12),
-    IsInternetBankingEnabled BOOLEAN DEFAULT FALSE
+    IsInternetBankingEnabled BOOLEAN DEFAULT FALSE,
+    DocumentPath VARCHAR(255)
 );
 
 -- ============================================

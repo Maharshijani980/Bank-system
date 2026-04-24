@@ -35,17 +35,17 @@
         <div class="card" id="transactionForm" style="display: none;">
             <h2 id="formTitle">💳 Transaction</h2>
             <div id="depositForm" style="display: none;">
-                <input id="depositAmount" placeholder="💰 Deposit Amount" type="number" step="0.01">
+                <input id="depositAmount" placeholder="💰 Deposit Amount" type="number">
                 <button onclick="processDeposit()">💳 Deposit</button>
             </div>
             <div id="withdrawForm" style="display: none;">
-                <input id="withdrawAmount" placeholder="💸 Withdraw Amount" type="number" step="0.01">
+                <input id="withdrawAmount" placeholder="💸 Withdraw Amount" type="number">
                 <p class="help-text">💡 Current accounts allow overdraft up to the limit.</p>
                 <button onclick="processWithdraw()">💸 Withdraw</button>
             </div>
             <div id="transferForm" style="display: none;">
                 <input id="transferToAccount" placeholder="🏦 Recipient Account Number" type="number">
-                <input id="transferAmount" placeholder="💰 Transfer Amount" type="number" step="0.01">
+                <input id="transferAmount" placeholder="💰 Transfer Amount" type="number">
                 <input id="transferDescription" placeholder="📝 Description (optional)">
                 <button onclick="processTransfer()">🔄 Transfer</button>
             </div>
@@ -165,8 +165,12 @@ function hideAllForms() {
 }
 
 function processDeposit() {
-    const amount = document.getElementById("depositAmount").value;
-    if (!amount || parseFloat(amount) <= 0) {
+    const amountStr = document.getElementById("depositAmount").value.trim();
+    const amount = parseFloat(amountStr);
+    
+    console.log("Deposit Debug - Input:", amountStr, "Parsed:", amount);
+    
+    if (!amountStr || amount <= 0 || !Number.isFinite(amount)) {
         alert("Please enter a valid amount");
         return;
     }
@@ -174,6 +178,7 @@ function processDeposit() {
     processTransaction(getAccountFromURL(), amount, "credit")
     .then(data => {
         alert("Deposit successful!");
+        document.getElementById("depositAmount").value = "";
         loadAccountDetails(getAccountFromURL());
         loadRecentTransactions(getAccountFromURL());
         hideAllForms();
@@ -183,8 +188,12 @@ function processDeposit() {
 }
 
 function processWithdraw() {
-    const amount = document.getElementById("withdrawAmount").value;
-    if (!amount || parseFloat(amount) <= 0) {
+    const amountStr = document.getElementById("withdrawAmount").value.trim();
+    const amount = parseFloat(amountStr);
+    
+    console.log("Withdraw Debug - Input:", amountStr, "Parsed:", amount);
+    
+    if (!amountStr || amount <= 0 || !Number.isFinite(amount)) {
         alert("Please enter a valid amount");
         return;
     }
@@ -192,6 +201,7 @@ function processWithdraw() {
     processTransaction(getAccountFromURL(), amount, "debit")
     .then(data => {
         alert("Withdrawal successful!");
+        document.getElementById("withdrawAmount").value = "";
         loadAccountDetails(getAccountFromURL());
         loadRecentTransactions(getAccountFromURL());
         hideAllForms();

@@ -1,3 +1,4 @@
+require("dotenv").config();
 const mysql = require("mysql2");
 const fs = require("fs");
 const path = require("path");
@@ -6,16 +7,22 @@ const path = require("path");
 const schemaFile = path.join(__dirname, "backend/schema.sql");
 const schema = fs.readFileSync(schemaFile, "utf8");
 
+const dbConfig = {
+    host: process.env.MYSQL_HOST || "localhost",
+    port: Number(process.env.MYSQL_PORT || 3306),
+    user: process.env.MYSQL_USER || "root",
+    password: process.env.MYSQL_PASSWORD || ""
+};
+
 // Connect to MySQL without specifying database
 const connection = mysql.createConnection({
-    host: "localhost",
-    user: "root",
-    password: "Rj12345@"
+    ...dbConfig
 });
 
 connection.connect((err) => {
     if (err) {
         console.error("Connection error:", err);
+        console.log(`Connection config -> host: ${dbConfig.host}, port: ${dbConfig.port}, user: ${dbConfig.user}, passwordSet: ${Boolean(dbConfig.password)}`);
         process.exit(1);
     }
     
