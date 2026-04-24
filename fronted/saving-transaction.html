@@ -136,12 +136,13 @@ function loadRecentTransactions(accountNumber) {
             return;
         }
 
-        let html = "<table class='transaction-table'><thead><tr><th>Type</th><th>Amount</th><th>Date</th></tr></thead><tbody>";
+        let html = "<table class='transaction-table'><thead><tr><th>Type</th><th>Amount</th><th>Date</th><th>Time</th></tr></thead><tbody>";
         data.slice(0, 5).forEach(txn => {
             html += `<tr>
                 <td>${txn.Type.toUpperCase()}</td>
                 <td>$${parseFloat(txn.Amount).toFixed(2)}</td>
                 <td>${txn.TxnDate}</td>
+                <td>${txn.TxnTime}</td>
             </tr>`;
         });
         html += "</tbody></table>";
