@@ -207,25 +207,9 @@ function createAccountAdmin() {
 }
 
 function getAccountDetails() {
-    const accountNumber = document.getElementById("searchAccNumber").value.trim();
-    if (!accountNumber) {
-        alert("Please enter an account number.");
-        return;
-    }
-
-    fetchAPI(`/account/${accountNumber}`)
-    .then(data => {
-        if (data.error) {
-            alert(data.error);
-        } else {
-            document.getElementById("accBalance").textContent = `$${parseFloat(data.Balance).toFixed(2)}`;
-            document.getElementById("accType").textContent = data.AccountType;
-            document.getElementById("accStatus").textContent = data.Status;
-            document.getElementById("accInternet").textContent = data.InternetBankingEnabled ? "Enabled" : "Disabled";
-            document.getElementById("accountDetails").style.display = "block";
-        }
-    })
-    .catch(err => alert("Error fetching account details: " + err.message));
+    // Disabled for customer dashboard - moved to admin only
+    alert("Account details search has been moved to the Admin Dashboard.");
+    return;
 }
 
 function getCustomerLoginId() {
@@ -302,7 +286,13 @@ function redirectToTransactionPage() {
 }
 
 function previewAllTransactions() {
-    fetchAPI("/transactions-all")
+    const loginId = getCustomerLoginId();
+    if (!loginId) {
+        alert("Please login first");
+        return;
+    }
+    
+    fetchAPI(`/transactions-all/${loginId}`)
     .then(data => {
         displayTransactions(data);
     })
@@ -365,4 +355,42 @@ function logout() {
         localStorage.removeItem("customerLoginId");
         window.location.href = "index.html";
     }
+}
+
+function changePassword() {
+    const loginId = getCustomerLoginId();
+    if (!loginId) {
+        alert("Please login first");
+        return;
+    }
+
+    const oldPassword = prompt("Enter your current password:");
+    if (!oldPassword) return;
+
+    const newPassword = prompt("Enter your new password (min 6 characters):");
+    if (!newPassword) return;
+
+    if (newPassword.length < 6) {
+        alert("Password must be at least 6 characters long");
+        return;
+    }
+
+    const confirmPassword = prompt("Confirm your new password:");
+    if (confirmPassword !== newPassword) {
+        alert("Passwords do not match");
+        return;
+    }
+
+    fetchAPI("/customer/change-password", {
+        method: "POST",
+        body: JSON.stringify({ loginId, oldPassword, newPassword })
+    })
+    .then(data => {
+        if (data.error) {
+            alert("Error: " + data.error);
+        } else {
+            alert(data.message);
+        }
+    })
+    .catch(err => alert("Password change error: " + err.message));
 }

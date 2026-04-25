@@ -132,12 +132,19 @@ body::after {
     z-index: 1;
 }
 
+.nav-right {
+    display: flex;
+    gap: 10px;
+    position: relative;
+    z-index: 1;
+}
+
 .nav-title {
-    color: #1a1a2e;
+    color: #000000;
     font-size: 1.8em;
     margin: 0;
     font-weight: 700;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .nav-title::before {
@@ -147,7 +154,7 @@ body::after {
 }
 
 .branch-info {
-    color: #667eea;
+    color: #333333;
     font-size: 0.95em;
     margin: 5px 0 0 0;
     font-weight: 500;

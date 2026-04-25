@@ -232,6 +232,39 @@ app.post("/customer/login", (req, res) => {
     });
 });
 
+/* 2A. CHANGE PASSWORD */
+app.post("/customer/change-password", (req, res) => {
+    const { loginId, oldPassword, newPassword } = req.body;
+
+    if (!loginId || !oldPassword || !newPassword) {
+        return res.status(400).json({ error: "Login ID, old password, and new password are required" });
+    }
+
+    if (newPassword.length < 6) {
+        return res.status(400).json({ error: "New password must be at least 6 characters long" });
+    }
+
+    db.query("SELECT * FROM Customer WHERE LoginId = ? AND Password = ?", [loginId, oldPassword], (err, result) => {
+        if (err) {
+            console.error(err);
+            return res.status(500).json({ error: "Error during password change" });
+        }
+
+        if (result.length === 0) {
+            return res.status(401).json({ error: "Invalid login credentials" });
+        }
+
+        db.query("UPDATE Customer SET Password = ? WHERE LoginId = ?", [newPassword, loginId], (err) => {
+            if (err) {
+                console.error(err);
+                return res.status(500).json({ error: "Error updating password" });
+            }
+
+            res.json({ message: "Password changed successfully" });
+        });
+    });
+});
+
 /* 3. CREATE ACCOUNT */
 app.post("/createAccount", (req, res) => {
     const { cid, loginId, balance, accountType, internetBanking } = req.body;
@@ -603,8 +636,25 @@ app.get("/transactions/:accountNumber", (req, res) => {
     );
 });
 
-/* 13. GET ALL TRANSACTIONS */
-app.get("/transactions-all", (req, res) => {
+/* 13. GET ALL TRANSACTIONS FOR CUSTOMER */
+app.get("/transactions-all/:loginId", (req, res) => {
+    const { loginId } = req.params;
+    
+    db.query(
+        "SELECT t.* FROM Transactions t JOIN BankAccount ba ON t.AccountId = ba.AccId JOIN Customer c ON ba.CId = c.CId WHERE c.LoginId = ? ORDER BY t.TxnDate DESC LIMIT 100",
+        [loginId],
+        (err, result) => {
+            if (err) {
+                console.error(err);
+                return res.status(500).json({ error: "Error fetching transactions" });
+            }
+            res.json(result || []);
+        }
+    );
+});
+
+/* 13B. GET ALL TRANSACTIONS (ADMIN ONLY) */
+app.get("/transactions-all-admin", (req, res) => {
     db.query(
         "SELECT t.* FROM Transactions t ORDER BY t.TxnDate DESC LIMIT 100",
         (err, result) => {

@@ -11,7 +11,10 @@
         <h1 class="nav-title">🏦 Customer Dashboard</h1>
         <p class="branch-info">Welcome, <strong id="customerName">Customer</strong></p>
     </div>
-    <button class="logout-btn" onclick="logout()">Logout</button>
+    <div class="nav-right">
+        <button class="logout-btn" onclick="changePassword()">🔐 Change Password</button>
+        <button class="logout-btn" onclick="logout()">Logout</button>
+    </div>
 </div>
 
 <div class="container">
@@ -33,7 +36,7 @@
     </div>
 
     <div class="row">
-        <div class="card">
+        <div class="card" style="display: none;">
             <h2>� Account Details</h2>
             <input id="searchAccNumber" placeholder="Enter Account Number" type="number">
             <button onclick="getAccountDetails()">🔎 Check Account</button>
@@ -49,7 +52,7 @@
             <h2>📊 Transaction History</h2>
             <div class="search-section">
                 <button onclick="loadTransactions()" class="btn-primary">Load Selected Account</button>
-                <button onclick="previewAllTransactions()" class="btn-secondary">View All Transactions</button>
+                <button onclick="previewAllTransactions()" class="btn-secondary">View All My Transactions</button>
             </div>
             <div id="transactionContainer">
                 <table class="transaction-table" id="table">
