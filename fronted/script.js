@@ -70,6 +70,12 @@ function register() {
         return;
     }
 
+    // Validate contact - only 10 digits
+    if (!/^\d{10}$/.test(contact)) {
+        alert("Contact number must be exactly 10 digits with no letters or special characters.");
+        return;
+    }
+
     const [firstName = "", ...rest] = name.split(/\s+/);
     const lastName = rest.join(" ");
 
@@ -108,6 +114,18 @@ function createCustomerAdmin() {
 
     if (!name || !contact || !dob) {
         alert("Please fill in all required fields (Name, Contact, DOB).");
+        return;
+    }
+
+    // Validate contact - only 10 digits
+    if (!/^\d{10}$/.test(contact)) {
+        alert("Contact number must be exactly 10 digits with no letters or special characters.");
+        return;
+    }
+
+    // Validate Aadhar - only 12 digits
+    if (aadharCard && !/^\d{12}$/.test(aadharCard)) {
+        alert("Aadhar Card number must be exactly 12 digits with no letters or special characters.");
         return;
     }
 
@@ -260,7 +278,7 @@ function populateAccounts(accounts) {
         card.className = "account-card";
         card.innerHTML = `
             <h3>${acc.AccountType.toUpperCase()} - ${acc.AccountNumber}</h3>
-            <p><strong>Balance:</strong> $${parseFloat(acc.Balance).toFixed(2)}</p>
+            <p><strong>Balance:</strong> ₹${parseFloat(acc.Balance).toFixed(2)}</p>
             <p><strong>IFSC:</strong> ${acc.IFSC}</p>
             <p><strong>Status:</strong> ${acc.Status}</p>
             <p><strong>Internet Banking:</strong> ${acc.InternetBankingEnabled ? "Enabled" : "Disabled"}</p>
@@ -325,14 +343,25 @@ function displayTransactions(data) {
     let totalAmount = 0;
 
     data.forEach(transaction => {
+        // Format date from TxnDate
+        const dateObj = new Date(transaction.TxnDate);
+        const formattedDate = dateObj.toLocaleDateString('en-IN', { year: 'numeric', month: '2-digit', day: '2-digit' });
+        
+        // Format time from TxnTime (format: HH:MM:SS)
+        const timeString = transaction.TxnTime || "00:00:00";
+        const [hours, minutes, seconds] = timeString.split(':');
+        const timeDate = new Date();
+        timeDate.setHours(parseInt(hours), parseInt(minutes), parseInt(seconds));
+        const formattedTime = timeDate.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+        
         html += `
             <tr>
                 <td>${transaction.TransId}</td>
                 <td>${transaction.AccountId}</td>
-                <td>$${parseFloat(transaction.Amount).toFixed(2)}</td>
+                <td>₹${parseFloat(transaction.Amount).toFixed(2)}</td>
                 <td><strong>${transaction.Type.toUpperCase()}</strong></td>
-                <td>${transaction.TxnDate}</td>
-                <td>${transaction.TxnTime}</td>
+                <td>${formattedDate}</td>
+                <td>${formattedTime}</td>
             </tr>
         `;
         totalAmount += parseFloat(transaction.Amount);
@@ -340,7 +369,7 @@ function displayTransactions(data) {
 
     tableBody.innerHTML = html;
     document.getElementById("totalTrans").textContent = data.length;
-    document.getElementById("totalAmount").textContent = `$${totalAmount.toFixed(2)}`;
+    document.getElementById("totalAmount").textContent = `₹${totalAmount.toFixed(2)}`;
     chartContainer.style.display = "block";
 }
 
@@ -394,3 +423,22 @@ function changePassword() {
     })
     .catch(err => alert("Password change error: " + err.message));
 }
+
+// Real-time input validation for phone and Aadhar numbers
+document.addEventListener("DOMContentLoaded", () => {
+    // Contact input - allow only digits, max 10
+    const contactInputs = document.querySelectorAll('input[placeholder*="Contact"]');
+    contactInputs.forEach(input => {
+        input.addEventListener('input', function() {
+            this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);
+        });
+    });
+
+    // Aadhar input - allow only digits, max 12
+    const aadharInputs = document.querySelectorAll('input[placeholder*="Aadhar"], input[placeholder*="aadhar"]');
+    aadharInputs.forEach(input => {
+        input.addEventListener('input', function() {
+            this.value = this.value.replace(/[^0-9]/g, '').slice(0, 12);
+        });
+    });
+});

@@ -18,9 +18,9 @@
     <div class="row">
         <div class="card">
             <h2>💰 Account Balance</h2>
-            <p><strong>💵 Current Balance:</strong> <span id="currentBalance">$0.00</span></p>
-            <p><strong>🔒 Minimum Balance:</strong> <span id="minimumBalance">$1,000.00</span></p>
-            <p><strong>✅ Available for Withdrawal:</strong> <span id="availableBalance">$0.00</span></p>
+            <p><strong>💵 Current Balance:</strong> <span id="currentBalance">₹0.00</span></p>
+            <p><strong>🔒 Minimum Balance:</strong> <span id="minimumBalance">₹1,000.00</span></p>
+            <p><strong>✅ Available for Withdrawal:</strong> <span id="availableBalance">₹0.00</span></p>
             <p><strong>📊 Monthly Withdrawal Limit:</strong> <span id="withdrawalLimit">5 transactions</span></p>
             <p><strong>📈 Interest Rate:</strong> <span id="interestRate">0%</span></p>
         </div>
@@ -42,7 +42,7 @@
             </div>
             <div id="withdrawForm" style="display: none;">
                 <input id="withdrawAmount" placeholder="💸 Withdraw Amount" type="number">
-                <p class="help-text">💡 Saving accounts require minimum balance of $1,000 and have monthly withdrawal limits.</p>
+                <p class="help-text">💡 Saving accounts require minimum balance of ₹1,000 and have monthly withdrawal limits.</p>
                 <button onclick="processWithdraw()">💸 Withdraw</button>
             </div>
             <div id="transferForm" style="display: none;">
@@ -103,9 +103,9 @@ function loadAccountDetails(accountNumber) {
             const availableBalance = Math.max(0, currentBalance - minimumBalance);
             const interestRate = savingData.InterestRate || 0;
 
-            document.getElementById("currentBalance").textContent = `$${currentBalance.toFixed(2)}`;
-            document.getElementById("minimumBalance").textContent = `$${parseFloat(minimumBalance).toFixed(2)}`;
-            document.getElementById("availableBalance").textContent = `$${availableBalance.toFixed(2)}`;
+            document.getElementById("currentBalance").textContent = `₹${currentBalance.toFixed(2)}`;
+            document.getElementById("minimumBalance").textContent = `₹${parseFloat(minimumBalance).toFixed(2)}`;
+            document.getElementById("availableBalance").textContent = `₹${availableBalance.toFixed(2)}`;
             document.getElementById("interestRate").textContent = `${interestRate}%`;
         })
         .catch(err => {
@@ -113,9 +113,9 @@ function loadAccountDetails(accountNumber) {
             // Fallback to defaults
             const minimumBalance = 1000;
             const availableBalance = Math.max(0, currentBalance - minimumBalance);
-            document.getElementById("currentBalance").textContent = `$${currentBalance.toFixed(2)}`;
-            document.getElementById("minimumBalance").textContent = `$${minimumBalance.toFixed(2)}`;
-            document.getElementById("availableBalance").textContent = `$${availableBalance.toFixed(2)}`;
+            document.getElementById("currentBalance").textContent = `₹${currentBalance.toFixed(2)}`;
+            document.getElementById("minimumBalance").textContent = `₹${minimumBalance.toFixed(2)}`;
+            document.getElementById("availableBalance").textContent = `₹${availableBalance.toFixed(2)}`;
             document.getElementById("interestRate").textContent = "0%";
         });
     })
@@ -140,7 +140,7 @@ function loadRecentTransactions(accountNumber) {
         data.slice(0, 5).forEach(txn => {
             html += `<tr>
                 <td>${txn.Type.toUpperCase()}</td>
-                <td>$${parseFloat(txn.Amount).toFixed(2)}</td>
+                <td>₹${parseFloat(txn.Amount).toFixed(2)}</td>
                 <td>${txn.TxnDate}</td>
                 <td>${txn.TxnTime}</td>
             </tr>`;
@@ -245,7 +245,7 @@ function processTransfer() {
 
     // Check minimum balance after transfer
     if (currentBalance - transferAmount < minimumBalance) {
-        alert("Cannot transfer. Account must maintain minimum balance of $1,000.");
+        alert("Cannot transfer. Account must maintain minimum balance of ₹1,000.");
         return;
     }
 

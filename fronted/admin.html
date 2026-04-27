@@ -23,11 +23,11 @@
         <div class="card">
             <h2>👥 Create New Customer</h2>
             <input id="adminName" placeholder="Full Name">
-            <input id="adminContact" placeholder="Contact Number" type="tel">
+            <input id="adminContact" placeholder="Contact Number (10 digits)" type="tel" maxlength="10" inputmode="numeric">
             <input id="adminEmail" placeholder="Email Address" type="email">
             <input id="adminAddress" placeholder="Address">
             <input id="adminDob" type="date" placeholder="Date of Birth">
-            <input id="adminAadharCard" placeholder="Aadhar Card Number">
+            <input id="adminAadharCard" placeholder="Aadhar Card Number (12 digits)" type="text" maxlength="12" inputmode="numeric">
             <label for="adminDocument" style="display: block; margin: 15px 0; color: #1a1a2e; font-weight: 600;">📄 Upload Document (Proof)</label>
             <input id="adminDocument" type="file" accept=".pdf,.jpg,.jpeg,.png" placeholder="Upload Document" style="padding: 12px; border: 2px dashed #667eea; border-radius: 8px; cursor: pointer;">
             <p class="help-text" style="margin-top: 10px;">✓ Accepted: PDF, JPG, PNG (Max 5MB)</p>

@@ -18,9 +18,9 @@
     <div class="row">
         <div class="card">
             <h2>💰 Account Balance</h2>
-            <p><strong>💵 Current Balance:</strong> <span id="currentBalance">$0.00</span></p>
-            <p><strong>🔄 Overdraft Limit:</strong> <span id="overdraftLimit">$0.00</span></p>
-            <p><strong>✅ Available Balance:</strong> <span id="availableBalance">$0.00</span></p>
+            <p><strong>💵 Current Balance:</strong> <span id="currentBalance">₹0.00</span></p>
+            <p><strong>🔄 Overdraft Limit:</strong> <span id="overdraftLimit">₹0.00</span></p>
+            <p><strong>✅ Available Balance:</strong> <span id="availableBalance">₹0.00</span></p>
         </div>
 
         <div class="card">
@@ -91,19 +91,19 @@ function loadAccountDetails(accountNumber) {
             return;
         }
         accountData = data;
-        document.getElementById("currentBalance").textContent = `$${parseFloat(data.Balance).toFixed(2)}`;
+        document.getElementById("currentBalance").textContent = `₹${parseFloat(data.Balance).toFixed(2)}`;
         
         // Fetch overdraft limit from CurrentAccount table
         fetchAPI(`/current-account/${accountNumber}`)
         .then(currentData => {
             const overdraftLimit = currentData.OverdraftLimit || 0;
-            document.getElementById("overdraftLimit").textContent = `$${parseFloat(overdraftLimit).toFixed(2)}`;
-            document.getElementById("availableBalance").textContent = `$${parseFloat(data.Balance + overdraftLimit).toFixed(2)}`;
+            document.getElementById("overdraftLimit").textContent = `₹${parseFloat(overdraftLimit).toFixed(2)}`;
+            document.getElementById("availableBalance").textContent = `₹${parseFloat(data.Balance + overdraftLimit).toFixed(2)}`;
         })
         .catch(err => {
             console.error("Error loading overdraft info:", err);
-            document.getElementById("overdraftLimit").textContent = "$0.00";
-            document.getElementById("availableBalance").textContent = `$${parseFloat(data.Balance).toFixed(2)}`;
+            document.getElementById("overdraftLimit").textContent = "₹0.00";
+            document.getElementById("availableBalance").textContent = `₹${parseFloat(data.Balance).toFixed(2)}`;
         });
     })
     .catch(err => alert("Error loading account: " + err.message));
@@ -127,7 +127,7 @@ function loadRecentTransactions(accountNumber) {
         data.slice(0, 5).forEach(txn => {
             html += `<tr>
                 <td>${txn.Type.toUpperCase()}</td>
-                <td>$${parseFloat(txn.Amount).toFixed(2)}</td>
+                <td>₹${parseFloat(txn.Amount).toFixed(2)}</td>
                 <td>${txn.TxnDate}</td>
                 <td>${txn.TxnTime}</td>
             </tr>`;

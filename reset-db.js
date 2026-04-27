@@ -19,6 +19,14 @@ const connection = mysql.createConnection({
     ...dbConfig
 });
 
+const allowReset = String(process.env.RESET_DB || "").toLowerCase() === "true";
+
+if (!allowReset) {
+    console.log("RESET_DB is not set to true. Skipping database reset to avoid data loss.");
+    console.log("If you really want to reset, run: RESET_DB=true node reset-db.js");
+    process.exit(0);
+}
+
 connection.connect((err) => {
     if (err) {
         console.error("Connection error:", err);

@@ -258,7 +258,7 @@ function viewCustomerDetails(customerId, loginId) {
                 accountsHtml += `
                     <div style="background: #f5f5f5; padding: 10px; margin: 5px 0; border-radius: 4px;">
                         <strong>${acc.AccountType.toUpperCase()}</strong> - ${acc.AccountNumber}<br>
-                        Balance: $${parseFloat(acc.Balance).toFixed(2)}<br>
+                        Balance: ₹${parseFloat(acc.Balance).toFixed(2)}<br>
                         Status: ${acc.Status}<br>
                         IFSC: ${acc.IFSC}
                     </div>

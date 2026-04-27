@@ -624,7 +624,7 @@ app.get("/transactions/:accountNumber", (req, res) => {
     const accountNumber = req.params.accountNumber;
 
     db.query(
-        "SELECT t.* FROM Transactions t JOIN BankAccount ba ON t.AccountId = ba.AccId WHERE ba.AccountNumber = ? ORDER BY t.TxnDate DESC LIMIT 10",
+        "SELECT t.TransId, t.AccountId, t.Amount, t.Type, t.TxnDate, t.TxnTime, CONCAT(t.TxnDate, ' ', t.TxnTime) as DateTime FROM Transactions t JOIN BankAccount ba ON t.AccountId = ba.AccId WHERE ba.AccountNumber = ? ORDER BY t.TxnDate DESC, t.TxnTime DESC LIMIT 5",
         [accountNumber],
         (err, result) => {
             if (err) {
