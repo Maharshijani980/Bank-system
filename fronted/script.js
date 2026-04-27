@@ -441,4 +441,82 @@ document.addEventListener("DOMContentLoaded", () => {
             this.value = this.value.replace(/[^0-9]/g, '').slice(0, 12);
         });
     });
+
+    // Load customer photo if on dashboard
+    if (window.location.pathname.endsWith("dashboard.html")) {
+        loadCustomerPhoto();
+    }
 });
+
+// Upload customer photo
+function uploadPhoto() {
+    const loginId = localStorage.getItem("customerLoginId");
+    const photoInput = document.getElementById("photoInput");
+    const file = photoInput.files[0];
+
+    if (!loginId) {
+        alert("Please login first.");
+        return;
+    }
+
+    if (!file) {
+        alert("Please select a photo to upload.");
+        return;
+    }
+
+    const validTypes = ["image/jpeg", "image/jpg", "image/png"];
+    if (!validTypes.includes(file.type)) {
+        alert("Only JPG, JPEG, and PNG files are allowed.");
+        return;
+    }
+
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+        alert("Photo size must be less than 5MB.");
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append("loginId", loginId);
+    formData.append("photo", file);
+
+    fetch("http://localhost:3000/customer/upload-photo", {
+        method: "POST",
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert("Error: " + data.error);
+        } else {
+            alert(data.message);
+            photoInput.value = "";
+            loadCustomerPhoto();
+        }
+    })
+    .catch(err => alert("Upload Error: " + err.message));
+}
+
+// Load customer photo
+function loadCustomerPhoto() {
+    const loginId = localStorage.getItem("customerLoginId");
+
+    if (!loginId) return;
+
+    fetch(`http://localhost:3000/customer/profile/${loginId}`)
+    .then(response => response.json())
+    .then(data => {
+        const photoImg = document.getElementById("customerPhoto");
+        const noPhotoText = document.getElementById("noPhotoText");
+
+        if (data.customer && data.customer.DocumentPath) {
+            photoImg.src = `uploads/${data.customer.DocumentPath}`;
+            photoImg.style.display = "block";
+            noPhotoText.style.display = "none";
+        } else {
+            photoImg.style.display = "none";
+            noPhotoText.style.display = "block";
+        }
+    })
+    .catch(err => console.error("Error loading photo:", err));
+}

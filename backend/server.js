@@ -265,6 +265,39 @@ app.post("/customer/change-password", (req, res) => {
     });
 });
 
+/* 2B. CUSTOMER UPLOAD PHOTO */
+app.post("/customer/upload-photo", upload.single('photo'), (req, res) => {
+    const { loginId } = req.body;
+
+    if (!loginId) {
+        if (req.file) {
+            fs.unlinkSync(path.join(uploadsDir, req.file.filename));
+        }
+        return res.status(400).json({ error: "Login ID is required" });
+    }
+
+    if (!req.file) {
+        return res.status(400).json({ error: "No photo file provided" });
+    }
+
+    const photoPath = req.file.filename;
+
+    db.query("UPDATE Customer SET DocumentPath = ? WHERE LoginId = ?", [photoPath, loginId], (err) => {
+        if (err) {
+            console.error(err);
+            if (req.file) {
+                fs.unlinkSync(path.join(uploadsDir, req.file.filename));
+            }
+            return res.status(500).json({ error: "Error uploading photo" });
+        }
+
+        res.json({
+            message: "Photo uploaded successfully",
+            photoPath: photoPath
+        });
+    });
+});
+
 /* 3. CREATE ACCOUNT */
 app.post("/createAccount", (req, res) => {
     const { cid, loginId, balance, accountType, internetBanking } = req.body;

@@ -26,7 +26,18 @@
         </div>
 
         <div class="card">
-            <h2>💰 Account Transactions</h2>
+            <h2>� Upload Your Photo</h2>
+            <div id="photoDisplay" style="margin-bottom: 15px; text-align: center;">
+                <img id="customerPhoto" src="" alt="Your Photo" style="max-width: 150px; max-height: 150px; border-radius: 10px; display: none; margin-bottom: 10px;">
+                <p id="noPhotoText" style="color: #999;">No photo uploaded yet</p>
+            </div>
+            <input id="photoInput" type="file" accept="image/jpeg,image/jpg,image/png" style="margin-bottom: 10px; padding: 10px; border: 2px dashed #667eea; border-radius: 8px; cursor: pointer; width: 100%; box-sizing: border-box;">
+            <p class="help-text">✓ Supported: JPG, JPEG, PNG (Max 5MB)</p>
+            <button onclick="uploadPhoto()" style="width: 100%; padding: 12px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">Upload Photo</button>
+        </div>
+
+        <div class="card">
+            <h2>�💰 Account Transactions</h2>
             <label for="txnAccSelect">Select Account</label>
             <select id="txnAccSelect" onchange="redirectToTransactionPage()">
                 <option value="">-- Select Account --</option>
